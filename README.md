@@ -2,7 +2,12 @@
 
 This tool can visualise f1 telemetry from any session, in any lap, in various different ways, and can save most of the visualisations to the working directory
 
-List of abilities:
+
+https://github.com/user-attachments/assets/77dafff4-0723-4458-92d5-7947949019a2
+
+
+
+<h2>List of abilities:</h2>
 
 <h3> View all laps set by a driver over one session: (Cannot be saved) </h3> 
     ⏺Puts all the laps set by a driver over the course of a session <br>
