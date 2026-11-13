@@ -1,6 +1,6 @@
 env/
 venv/
-f1_env/
+usb_env/
 .venv/
 
 f1_cache/

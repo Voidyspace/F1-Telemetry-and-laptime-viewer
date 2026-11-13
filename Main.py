@@ -4,8 +4,8 @@ from fastf1 import plotting
 import matplotlib as mpl
 mpl.use('TkAgg')
 from matplotlib import pyplot as plt
-import numpy as np
 from matplotlib.animation import FuncAnimation
+import numpy as np
 
 fastf1.plotting.setup_mpl(mpl_timedelta_support=True, color_scheme="fastf1")
 
@@ -39,27 +39,27 @@ def viewlaptelegraph():
         return
 
     team1 = driver1_lap['Team']
-    
+
     driver1_telemetry = driver1_lap.get_telemetry()
 
     min_speed = driver1_telemetry["Speed"].min()
     max_speed = driver1_telemetry["Speed"].max()
     throttlepercent = (driver1_telemetry["Throttle"]/100)*350
     brakepercent = (driver1_telemetry["Brake"])*350
- 
+
     fig, ax = plt.subplots(figsize=(8, 5))
     ax2 = ax.twinx()
 
 
     ax2.plot(driver1_telemetry["Distance"], throttlepercent, color='Green', alpha=0.5, linestyle='dashed')
 
-    
+
     ax.plot(driver1_telemetry["Distance"], driver1_telemetry["Speed"], color='Blue', label= " Speed")
-    
+
     ax2.plot(driver1_telemetry["Distance"], brakepercent, color= 'Red',alpha=0.5, linestyle='dashed', label= " Throttle/Brakes")
-    
+
     ax.vlines(x = circuit_info.corners['Distance'], ymin = min_speed - 20, ymax = max_speed + 20, color = 'grey', linestyle = 'dotted')
-    
+
     ax.set_xlabel("Distance (m)")
     ax.set_ylabel("Speed (km/h)")
     ax2.set_ylabel("Brake/Throttle (%)")
@@ -85,12 +85,12 @@ def comparelapspeedgraph():
         return
 
     team1 = driver1_lap['Team']
-    
+
     team2 = driver2_lap['Team'] if driver2_lap is not None else None
 
     driver1_telemetry = driver1_lap.get_telemetry()
     if driver2_lap is None:
-        driver2_telemetry = None   
+        driver2_telemetry = None
     else:
         driver2_telemetry = driver2_lap.get_telemetry()
 
@@ -171,7 +171,7 @@ def comparelaptimemap():
     fig, ax = plt.subplots(figsize=(8, 5))
 
     ax.plot(driver1_telemetry["X"], driver1_telemetry["Y"], color='grey', alpha=0.5, label='Track' )
-    
+
     point1, = ax.plot([], [], 'o', color=fastf1.plotting.get_team_color(team1, session=Session), label=driver1)
     if driver2_telemetry is not None:
         point2, = ax.plot([], [], 'o', color=fastf1.plotting.get_team_color(team2, session=Session), label=driver2)
@@ -183,13 +183,20 @@ def comparelaptimemap():
             x2, y2 = driver2_telemetry["X"].iloc[frame], driver2_telemetry["Y"].iloc[frame]
             point2.set_data([x2], [y2])
 
-    ani = FuncAnimation(fig, update, frames = min(len(driver1_telemetry), len(driver2_telemetry)) if driver2_telemetry is not None else len(driver1_telemetry), interval=100)
+    total_seconds = (driver1_telemetry['Time'].iloc[-1] - driver1_telemetry['Time'].iloc[0]).total_seconds()
+
+    real_fps = len(driver1_telemetry) / total_seconds
+    real_interval = (total_seconds / len(driver1_telemetry)) * 1000
+
+    ani = FuncAnimation(fig, update, frames = min(len(driver1_telemetry), len(driver1_telemetry)), interval = real_interval)
+
+    ani = FuncAnimation(fig, update, frames = min(len(driver1_telemetry), len(driver2_telemetry)) if driver2_telemetry is not None else len(driver1_telemetry), interval=real_interval)
 
     ax.set_title(f"{Session.event['EventName']} {Session.event.year} - {Session.name}")
     ax.legend(loc='upper left',
           ncol=3, fancybox=True, shadow=True)
     if input("Would you like to save this animation? (y/n): ").lower() == "y":
-        ani.save(filename=f"{Session.event['EventName']}_{Session.event.year}_{Session.name}_lap_map_comparison.mp4", writer='ffmpeg', fps=10)
+        ani.save(filename=f"{Session.event['EventName']}_{Session.event.year}_{Session.name}_lap_map_comparison.mp4", writer='ffmpeg', fps=real_fps)
     plt.show()
 
 def viewtelebar():
@@ -204,25 +211,41 @@ def viewtelebar():
     driver1_telemetry = driver1_lap.get_telemetry()
 
     fig, ax = plt.subplots(figsize=(8, 5))
+    ax2 = ax.twinx()
 
-    categories = ['Speed', 'Throttle', 'Brake']
-    y_data = [driver1_telemetry["Speed"].iloc[0], driver1_telemetry["Throttle"].iloc[0]*3.5, driver1_telemetry["Brake"].iloc[0]*350]
-    bars = ax.bar(categories, y_data, color=['tab:blue', 'tab:red', 'tab:green'])
+    categories = ['Speed', 'RPM', 'Throttle', 'Brake', 'Gear']
+    y_data = [
+        driver1_telemetry["Speed"].iloc[0],
+        driver1_telemetry["RPM"].iloc[0]*0.035,
+        driver1_telemetry['Throttle'].iloc[0]*3.5,
+        driver1_telemetry["Brake"].iloc[0]*350,
+        0
+    ]
+
+    bars = ax.bar(categories, y_data, color=['tab:blue', 'tab:orange', 'tab:green', 'tab:red'])
+    gear_bar = ax2.bar(['Gear'], driver1_telemetry["nGear"].iloc[0], color=['tab:purple'])
+
+    ax.set_ylim(0, 400)
+    ax2.set_ylim(0, 8)
+
 
 
     def update(frame):
-        new_data = [driver1_telemetry["Speed"].iloc[frame], driver1_telemetry["Throttle"].iloc[frame]*3.5, driver1_telemetry["Brake"].iloc[frame]*350]
+        new_data = [driver1_telemetry["Speed"].iloc[frame], driver1_telemetry["RPM"].iloc[frame]*0.036 , driver1_telemetry["Throttle"].iloc[frame]*3.5, driver1_telemetry["Brake"].iloc[frame]*350]
         for bar, height in zip(bars, new_data):
             bar.set_height(height)
-        
+        gear_bar[0].set_height(driver1_telemetry["nGear"].iloc[frame])
 
-    ani = FuncAnimation(fig, update, frames = min(len(driver1_telemetry), len(driver1_telemetry)), interval=100)
+    total_seconds = (driver1_telemetry['Time'].iloc[-1] - driver1_telemetry['Time'].iloc[0]).total_seconds()
+
+    real_fps = len(driver1_telemetry) / total_seconds
+    real_interval = (total_seconds / len(driver1_telemetry)) * 1000
+
+    ani = FuncAnimation(fig, update, frames = min(len(driver1_telemetry), len(driver1_telemetry)), interval = real_interval)
 
     ax.set_title(f"{Session.event['EventName']} {Session.event.year} - {Session.name}, {driver1} throttle/brake/speed comparison")
-    ax.legend(loc='upper left',
-          ncol=3, fancybox=True, shadow=True)
     if input("Would you like to save this animation? (y/n): ").lower() == "y":
-        ani.save(filename=f"{Session.event['EventName']}_{Session.event.year}_{Session.name}_lap_telemetry.mp4", writer='ffmpeg', fps=10)
+        ani.save(filename=f"{Session.event['EventName']}_{Session.event.year}_{Session.name}_lap_telemetry.mp4", writer='ffmpeg', fps = real_fps)
     plt.show()
 
 #Cache setup
