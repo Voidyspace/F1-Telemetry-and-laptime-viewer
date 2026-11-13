@@ -3,8 +3,7 @@
 This tool can visualise f1 telemetry from any session, in any lap, in various different ways, and can save most of the visualisations to the working directory
 
 
-/run/media/Sarunan/Ventoy/Documents/F1-Telemetry-and-laptime-viewer/Examples/lap_map_comparison.mp4
-
+https://github.com/user-attachments/assets/1e4f88ab-0e63-4b24-a9af-420a085b7fa5
 
 
 <h2>List of abilities:</h2>
